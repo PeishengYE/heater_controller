@@ -1,4 +1,7 @@
 <resources>
     <string name="app_name">Heater_controller</string>
     <string name="action_settings">Settings</string>
+    <string name="sensor_1_place">地下室温度</string>
+    <string name="sensor_2_place">电路板温度</string>
+    <string name="updating_in_progress">温度更新中</string>
 </resources>
