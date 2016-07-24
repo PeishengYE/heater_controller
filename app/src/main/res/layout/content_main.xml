@@ -30,28 +30,13 @@
 
 
     <Button
-        android:layout_width="236dp"
-        android:layout_height="87dp"
+        android:layout_width="200dp"
+        android:layout_height="60dp"
         android:text="@string/disable_button_state"
         android:id="@+id/button"
         android:layout_gravity="center"
-        android:layout_marginTop="20dp"
+        android:layout_marginTop="5dp"
 />
-
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-
-        android:textAppearance="?android:attr/textAppearanceLarge"
-        android:text="@string/cmd_in_progress"
-        android:id="@+id/CmdStatusTextView"
-        android:layout_gravity="center"
-        android:layout_marginTop="20dp"
-
-        android:textSize="10dp"
-        android:textColor="#ffffff"
-        />
 
     <TextView
         android:layout_width="wrap_content"
@@ -60,9 +45,56 @@
         android:text="@string/sensor_1_place"
         android:id="@+id/temperatureView"
         android:layout_gravity="center"
-        android:layout_marginTop="50dp"
+        android:layout_marginTop="20dp"
 
         android:textSize="20dp"
         android:textColor="#ffffff"
         />
+
+
+
+
+
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:text="@string/sensor_1_place"
+        android:id="@+id/networkErrView"
+        android:layout_gravity="center"
+        android:layout_marginTop="10dp"
+
+        android:textSize="20dp"
+        android:textColor="#ffffff"
+        />
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:text="@string/cmd_in_progress"
+        android:id="@+id/CmdStatusTextView"
+        android:layout_gravity="center"
+        android:layout_marginTop="5dp"
+
+        android:textSize="10dp"
+        android:textColor="#ffffff"
+        />
+
+    <ProgressBar
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+
+        android:id="@+id/progressBar"
+        android:layout_gravity="center"
+        android:layout_weight="0.37" />
+
+    <ImageView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/imageView"
+        android:layout_gravity="center_horizontal" />
+
+
 </LinearLayout>

@@ -21,4 +21,6 @@
     <string name="query_temprature">查询温度时，</string>
     <string name="query_switch">查询热水器时，</string>
     <string name="error">严重错误</string>
+    <string name="summary_net_error_on_switch">热水器连接错误次数：</string>
+    <string name="summary_net_error_on_sensor">温度传感器连接错误次数：</string>
 </resources>

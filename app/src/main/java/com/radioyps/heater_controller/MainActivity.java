@@ -16,6 +16,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -42,8 +43,9 @@ public class MainActivity  extends AppCompatActivity implements AlarmReceiverObs
     private  TextView tempView;
     private  TextView cmdStatus;
     private TextView switchStatus;
+    private TextView netErrView;
     private  Button power_button;
-
+    private ProgressBar mProgressBar;
 	private String response="";
     private static boolean task_in_running = false;
     private AlarmReceiver alarm = null;
@@ -57,8 +59,10 @@ public class MainActivity  extends AppCompatActivity implements AlarmReceiverObs
     private final static String SEVER_REPLY_SWITCH_ON="switch is on";
     private final static String SEVER_REPLY_SWITCH_OFF="switch is off";
     private final static String NETWORK_ERROR = "network_error";
+    private static int mNetErrorOnSwitch = 0;
+    private static int mNetErrorOnSensor = 0;
 
-    private final static int SOCKET_TIMEOUT= 5000;
+    private final static int SOCKET_TIMEOUT= 10*000; /*10 seconds */
 
     private Context mContext = this;
     private  static String currnet_cmd = null;
@@ -72,6 +76,8 @@ public class MainActivity  extends AppCompatActivity implements AlarmReceiverObs
         cmdStatus = (TextView) findViewById(R.id.CmdStatusTextView);
         switchStatus = (TextView) findViewById(R.id.SwitchStatusTextView);
         power_button = (Button)findViewById(R.id.button);
+        netErrView = (TextView)findViewById(R.id.networkErrView);
+        mProgressBar = (ProgressBar)findViewById(R.id.progressBar);
         alarm = new AlarmReceiver(this);
         power_button.setOnClickListener(new Button.OnClickListener(){
             public void onClick(View view){
@@ -172,6 +178,8 @@ public class MainActivity  extends AppCompatActivity implements AlarmReceiverObs
             task_in_running = true;
             currnet_cmd = cmd[1];
             cmdStatus.setText(getString(R.string.cmd_in_progress));
+            //setProgressBarVisibility(View.VISIBLE);
+            mProgressBar.setVisibility(View.VISIBLE);
             sendCmdOverTcpTask sendTask = new sendCmdOverTcpTask();
             sendTask.execute(cmd);
 
@@ -200,8 +208,8 @@ public class MainActivity  extends AppCompatActivity implements AlarmReceiverObs
                 return null;
             }
 
-            Log.i(LOG_TAG, "AsyncTask get param[0]: " + params[0]
-             + "param[1]: " + params[1]);
+            Log.i(LOG_TAG, "AsyncTask get param[0]: <<" + params[0]
+             + ">> param[1]: << " + params[1]+ ">>");
 		try {
 
 				response = "";
@@ -367,6 +375,8 @@ private boolean checkCRC(String line){
                 button_status = BUTTON_STATUS_ON;
             }else{
                 cmdStatus.setText("Error on cmd");
+               // setProgressBarVisibility(false);
+                mProgressBar.setVisibility(View.GONE);
                 switchStatus.setText(getString(R.string.unknow_state));
                 power_button.setText(getString(R.string.disable_button_state));
                 button_status = BUTTON_STATUS_UNKNOWN;
@@ -386,24 +396,40 @@ private boolean checkCRC(String line){
 
             task_in_running = false;
             cmdStatus.setText(getString(R.string.cmd_is_done));
+            //setProgressBarVisibility(false);
+            mProgressBar.setVisibility(View.GONE);
             if(response.equalsIgnoreCase(NETWORK_ERROR)){
                 StringBuilder toastString = new StringBuilder();
                 String cmdType = null;
+
                 if(currnet_cmd.equalsIgnoreCase(AlarmReceiver.CmdGetTemperature)){
                       cmdType = getResources().getString(R.string.query_temprature);
                       toastString.append(cmdType);
+                      mNetErrorOnSensor ++;
                 }else if(currnet_cmd.equalsIgnoreCase(AlarmReceiver.CmdGetSwtichStatus)){
                     cmdType = getResources().getString(R.string.query_switch);
                     toastString.append(cmdType);
+                    mNetErrorOnSwitch ++;
                 }
                 toastString.append(getResources().getString(R.string.network_error_try_again));
                 Toast.makeText(mContext,toastString.toString(), Toast.LENGTH_LONG).show();
+                setNetErrorView();
                 return;
             }
+
+
             if(currnet_cmd.equalsIgnoreCase(AlarmReceiver.CmdGetTemperature)){
                 updateResponseForTemp();
+                mNetErrorOnSensor--;
+                if(mNetErrorOnSensor < 0){
+                    mNetErrorOnSensor = 0;
+                }
             }else if(currnet_cmd.equalsIgnoreCase(AlarmReceiver.CmdGetSwtichStatus)){
                 updateResponseForSwitchStatus();
+                mNetErrorOnSwitch --;
+                if(mNetErrorOnSwitch < 0){
+                    mNetErrorOnSwitch = 0;
+                }
 
             }else if(currnet_cmd.equalsIgnoreCase(AlarmReceiver.CmdSetSwitchOFF)){
                 updateResponseForSwitchStatus();
@@ -413,13 +439,23 @@ private boolean checkCRC(String line){
 
 
 
-
+            setNetErrorView();
 
         }
 
 
 
     }
+
+    private void setNetErrorView(){
+        StringBuilder tmp = new StringBuilder();
+        tmp.append(getResources().getString(R.string.summary_net_error_on_switch));
+        tmp.append(" " + mNetErrorOnSwitch + "\n");
+        tmp.append(getResources().getString(R.string.summary_net_error_on_sensor));
+        tmp.append(" " + mNetErrorOnSensor );
+        netErrView.setText(tmp.toString());
+    }
+
 
     public static boolean isNetworkAvailable(Context context) {
         boolean isMobile = false, isWifi = false;
