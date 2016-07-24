@@ -25,8 +25,8 @@ public class AlarmReceiver extends BroadcastReceiver {
         private final static String LOG_TAG = "AlarmReceiver";
 
     public static String TemperatureSensorAddress = "192.168.12.248";
-    //private static String HeaterControllerAddress = "192.168.12.202";
-    public static String HeaterControllerAddress = "192.168.12.248";
+    public static String HeaterControllerAddress = "192.168.12.202";
+    //public static String HeaterControllerAddress = "192.168.12.248";
 
 
     public final static int CmdGetTemperatureInt = 0x13;
