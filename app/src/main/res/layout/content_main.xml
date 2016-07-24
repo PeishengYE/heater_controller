@@ -22,7 +22,7 @@
         android:layout_gravity="center"
         android:layout_marginTop="20dp"
 
-        android:textSize="50dp"
+        android:textSize="30dp"
         android:textColor="#ffffff"
          />
 
@@ -32,7 +32,7 @@
     <Button
         android:layout_width="236dp"
         android:layout_height="87dp"
-        android:text="@string/button_power_off"
+        android:text="@string/disable_button_state"
         android:id="@+id/button"
         android:layout_gravity="center"
         android:layout_marginTop="20dp"
