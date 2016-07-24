@@ -9,47 +9,129 @@ import android.net.NetworkInfo;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.SystemClock;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
-import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.io.OutputStream;
 import java.net.UnknownHostException;
 
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.net.Socket;
 import java.io.IOException;
-import com.radioyps.heater_controller.AlarmReceiver;
+
 public class MainActivity  extends AppCompatActivity implements AlarmReceiverObserver {
 
+
+
     private static final String LOG_TAG = MainActivity.class.getSimpleName();
-	TextView textResponse;
-	String response="";
-    private boolean task_in_running = false;
-    AlarmReceiver alarm = null;
+
+
+
+    private static int connectPort =5018;
+
+
+    private  TextView tempView;
+    private  TextView cmdStatus;
+    private TextView switchStatus;
+    private  Button power_button;
+
+	private String response="";
+    private static boolean task_in_running = false;
+    private AlarmReceiver alarm = null;
     private static long TIME_INTERVAL = 15*1000;
+    private static long TIME_DELAY = 3*1000;
+
+    private final static int BUTTON_STATUS_UNKNOWN = 0x14;
+    private final static int BUTTON_STATUS_ON = 0x15;
+    private final static int BUTTON_STATUS_OFF = 0x16;
+
+    private final static String SEVER_REPLY_SWITCH_ON="switch is on";
+    private final static String SEVER_REPLY_SWITCH_OFF="switch is off";
+
+
+
+    private  static String currnet_cmd = null;
+    private static int button_status = BUTTON_STATUS_UNKNOWN;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-		textResponse = (TextView) findViewById(R.id.responsTextView);
+		tempView = (TextView) findViewById(R.id.temperatureView);
+        cmdStatus = (TextView) findViewById(R.id.CmdStatusTextView);
+        switchStatus = (TextView) findViewById(R.id.SwitchStatusTextView);
+        power_button = (Button)findViewById(R.id.button);
         alarm = new AlarmReceiver(this);
+        power_button.setOnClickListener(new Button.OnClickListener(){
+            public void onClick(View view){
+                setSwitchOnOffcmd();
+            }
+        });
         setSupportActionBar(toolbar);
-        sendCommand("temp");
+        querySwitchStatus();
+        //sendCommand("temp");
     }
 
     public void onStart() {
         super.onStart();
-        sendCommand("temp");
+        //sendCommand("temp");
+        querySwitchStatus();
         SetAlarm(this);
+    }
+
+    public  void onPause(){
+        super.onPause();
+        Log.i(LOG_TAG, "onPause()>> cacel alarm..");
+        CancelAlarm(this);
+    }
+
+    public  void onDestroy(){
+        super.onDestroy();
+        CancelAlarm(this);
+    }
+
+    private void setSwitchOnOffcmd(){
+        if(button_status == BUTTON_STATUS_ON){
+            if (task_in_running == false){
+                setSwitchOn();
+            }else{
+                AlarmReceiver.setCurrentCmdFromUI(AlarmReceiver.CmdSetSwitchONInt);
+            }
+
+
+        }else if(button_status == BUTTON_STATUS_OFF){
+
+
+            if (task_in_running == false){
+                setSwitchOff();
+            }else{
+                AlarmReceiver.setCurrentCmdFromUI(AlarmReceiver.CmdSetSwitchOFFInt);
+            }
+        }else{
+
+        }
+    }
+    private void setSwitchOff(){
+        String [] cmd = new String[] {AlarmReceiver.HeaterControllerAddress, AlarmReceiver.CmdSetSwitchOFF};
+        sendCommand(cmd);
+    }
+
+    private void setSwitchOn(){
+        String [] cmd = new String[] {AlarmReceiver.HeaterControllerAddress, AlarmReceiver.CmdSetSwitchON};
+        sendCommand(cmd);
+    }
+
+    private void querySwitchStatus(){
+        String [] cmd = new String[] {AlarmReceiver.HeaterControllerAddress, AlarmReceiver.CmdGetSwtichStatus};
+        sendCommand(cmd);
     }
 
     @Override
@@ -74,42 +156,37 @@ public class MainActivity  extends AppCompatActivity implements AlarmReceiverObs
         return super.onOptionsItemSelected(item);
     }
 
-    public void sendCommand(String cmd){
+    public void sendCommand(String []cmd){
 
         if(!isNetworkAvailable(this)){
             Log.i(LOG_TAG, "Network is down, ignore sending cmd");
              return;
         }
 
-        Log.i(LOG_TAG, "Network is OK, Now sending " + cmd);
+
         if(task_in_running == false){
+            Log.i(LOG_TAG, "Network is OK, Now sending " + cmd[1]);
             task_in_running = true;
+            currnet_cmd = cmd[1];
+            cmdStatus.setText(getString(R.string.cmd_in_progress));
             sendCmdOverTcpTask sendTask = new sendCmdOverTcpTask();
             sendTask.execute(cmd);
 
+        }else{
+            Log.i(LOG_TAG, "Network is OK, however task is running, ignore ");
         }
     }
 
-
-
-    public void sendPowerOncmd(View view){
-
-        Log.i(LOG_TAG, "send power on cmd");
-        sendCommand("power on");
-
+    public static boolean getTaskRunningStatus(){
+        return task_in_running;
     }
 
-    public void sendPowerOffcmd(View view){
-        Log.i(LOG_TAG, "send power off cmd");
-        sendCommand("power off");
-    }
 
 
     public class sendCmdOverTcpTask extends AsyncTask<String, Void, String[]> {
 
         private final String LOG_TAG = sendCmdOverTcpTask.class.getSimpleName();
-	    String dstAddress = "192.168.12.248";
-	    int dstPort =5013;
+
 
         @Override
         protected String[] doInBackground(String... params) {
@@ -120,11 +197,13 @@ public class MainActivity  extends AppCompatActivity implements AlarmReceiverObs
                 return null;
             }
 
-
+            Log.i(LOG_TAG, "AsyncTask get param[0]: " + params[0]
+             + "param[1]" + params[1]);
 		try {
 
 				response = "";
-			socket = new Socket(dstAddress, dstPort);
+
+			socket = new Socket(params[0], connectPort);
 
 			ByteArrayOutputStream byteArrayOutputStream =
 				new ByteArrayOutputStream(1024);
@@ -133,6 +212,11 @@ public class MainActivity  extends AppCompatActivity implements AlarmReceiverObs
 
 			int bytesRead;
 			InputStream inputStream = socket.getInputStream();
+            OutputStream outputStream = socket.getOutputStream();
+
+
+            outputStream.write(params[1].getBytes());
+            outputStream.flush();
 
 			/*
 			 * notice: inputStream.read() will block if no data return
@@ -141,6 +225,8 @@ public class MainActivity  extends AppCompatActivity implements AlarmReceiverObs
 				byteArrayOutputStream.write(buffer, 0, bytesRead);
 				response += byteArrayOutputStream.toString("UTF-8");
 			}
+            outputStream.close();
+            inputStream.close();
 
 		} catch (UnknownHostException e) {
 			// TODO Auto-generated catch block
@@ -162,7 +248,7 @@ public class MainActivity  extends AppCompatActivity implements AlarmReceiverObs
 		}
 		return null;
 	}
-private boolean check_crc(String line){
+private boolean checkCRC(String line){
 
     int good_crc;
     int bad_crc;
@@ -178,7 +264,7 @@ private boolean check_crc(String line){
 
 
 
-        private String [] get_temp ()
+        private String [] parseTemperature()
 	{
 
 
@@ -202,7 +288,7 @@ private boolean check_crc(String line){
         Log.i(LOG_TAG, "line 3: " + lines[2]);
         Log.i(LOG_TAG, "line 4: " + lines[3]);
 
-        if(check_crc(lines[0])){
+        if(checkCRC(lines[0])){
         s_temp_1 = lines[1].split("=")[1];
         temp_1 = Double.parseDouble(s_temp_1);
         temp_1 /= 1000;
@@ -213,7 +299,7 @@ private boolean check_crc(String line){
          }
 
 
-        if(check_crc(lines[2])){
+        if(checkCRC(lines[2])){
         s_temp_2 = lines[3].split("=")[1];
         temp_2 = Double.parseDouble(s_temp_2);
         temp_2 /= 1000;
@@ -228,33 +314,80 @@ private boolean check_crc(String line){
 		return result;
 	}
 
+        private void updateResponseForTemp(){
 
+        String[] temp = parseTemperature();
+        if(temp == null){
+            task_in_running = false;
+            return;
+        }
+
+
+        //tempView.setText(parseTemperature());
+
+        //if((temp[0] != null)&&(temp[1] != null)){
+        if((temp[0] != null)){
+            tempView.setText(getString(R.string.sensor_1_place));
+            tempView.append(": " + temp[0]);
+            //tempView.append("\n");
+            // tempView.append(R.string.sensor_2_place);
+            // tempView.append(temp[1]);
+
+            Log.i(LOG_TAG, "onPostExecute temp 1 = " + temp[0]);
+            Log.i(LOG_TAG, "onPostExecute temp 2 = " + temp[1]);
+        }
+
+
+        }
+        private void updateResponseForSwitchStatus() {
+            Log.i(LOG_TAG, "updateResponseForSwitchStatus()>> response: " + response);
+            /* set SwitchStatusTextView*/
+            if(response.equalsIgnoreCase(SEVER_REPLY_SWITCH_ON)){
+
+                switchStatus.setText(getString(R.string.current_switch_status)
+                        + getString(R.string.power_on));
+                power_button.setText(getString(R.string.button_power_off));
+                button_status = BUTTON_STATUS_OFF;
+
+            }else if(response.equalsIgnoreCase(SEVER_REPLY_SWITCH_OFF)){
+
+                switchStatus.setText(getString(R.string.current_switch_status)
+                        + getString(R.string.power_off));
+                power_button.setText(getString(R.string.button_power_on));
+                button_status = BUTTON_STATUS_ON;
+            }else{
+                cmdStatus.setText("Error on cmd");
+                switchStatus.setText(getString(R.string.unknow_state));
+            }
+            /* set Button status*/
+        }
+
+        private void updateResponseForSwitchOnOff() {
+
+            /* set cmdStatus Text view */
+        }
 
 
         @Override
         protected void onPostExecute(String[] result) {
-            String[] temp = get_temp();
-            if(temp == null){
-                task_in_running = false;
-                return;
-            }
 
-
-             //textResponse.setText(get_temp());
-
-            //if((temp[0] != null)&&(temp[1] != null)){
-            if((temp[0] != null)){
-                textResponse.setText(R.string.sensor_1_place);
-            textResponse.append(": "+ temp[0]);
-            //textResponse.append("\n");
-           // textResponse.append(R.string.sensor_2_place);
-           // textResponse.append(temp[1]);
-
-                Log.i(LOG_TAG, "onPostExecute temp 1 = " + temp[0]);
-                Log.i(LOG_TAG, "onPostExecute temp 2 = " + temp[1]);
-            }
 
             task_in_running = false;
+            cmdStatus.setText(getString(R.string.cmd_is_done));
+            if(currnet_cmd.equalsIgnoreCase(AlarmReceiver.CmdGetTemperature)){
+                updateResponseForTemp();
+            }else if(currnet_cmd.equalsIgnoreCase(AlarmReceiver.CmdGetSwtichStatus)){
+                updateResponseForSwitchStatus();
+
+            }else if(currnet_cmd.equalsIgnoreCase(AlarmReceiver.CmdSetSwitchOFF)){
+                updateResponseForSwitchStatus();
+            }else if(currnet_cmd.equalsIgnoreCase(AlarmReceiver.CmdSetSwitchON)){
+                updateResponseForSwitchStatus();
+            }
+
+
+
+
 
         }
 
@@ -292,15 +425,16 @@ private boolean check_crc(String line){
 
 
     public void SetAlarm(Context context) {
-        Toast.makeText(context, "Set Alarm!", Toast.LENGTH_LONG).show(); // For example
-        Log.d("DWNetMon", "Set alarm!");
+        //Toast.makeText(context, R.string.updating_in_progress, Toast.LENGTH_LONG).show(); // For example
+        Log.d(LOG_TAG, "Set alarm!");
         AlarmManager am = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
         Intent intnt = new Intent(context, AlarmReceiver.class);
         PendingIntent pendngIntnt = PendingIntent.getBroadcast(context, 0, intnt, 0);
-        am.setRepeating(AlarmManager.ELAPSED_REALTIME_WAKEUP, SystemClock.elapsedRealtime() + TIME_INTERVAL, TIME_INTERVAL, pendngIntnt);
+        am.setRepeating(AlarmManager.ELAPSED_REALTIME_WAKEUP, SystemClock.elapsedRealtime() + TIME_DELAY, TIME_INTERVAL, pendngIntnt);
     }
 
     public void CancelAlarm(Context context) {
+        Log.d(LOG_TAG, "Cancle alarm!");
         Intent intent = new Intent(context, AlarmReceiver.class);
         PendingIntent sender = PendingIntent.getBroadcast(context, 0, intent, 0);
         AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);

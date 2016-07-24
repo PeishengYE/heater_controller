@@ -1,47 +1,68 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    xmlns:app="http://schemas.android.com/apk/res-auto" android:layout_width="match_parent"
-    android:layout_height="match_parent" android:paddingLeft="@dimen/activity_horizontal_margin"
-    android:paddingRight="@dimen/activity_horizontal_margin"
-    android:paddingTop="@dimen/activity_vertical_margin"
-    android:paddingBottom="@dimen/activity_vertical_margin"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#252525"
+    android:orientation="vertical"
+    android:padding="20dp"
     app:layout_behavior="@string/appbar_scrolling_view_behavior"
-    tools:showIn="@layout/activity_main" tools:context=".MainActivity">
+    tools:showIn="@layout/activity_main" tools:context=".MainActivity"
+    android:weightSum="1">
+
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:text="@string/unknow_state"
+        android:id="@+id/SwitchStatusTextView"
+        android:layout_gravity="center"
+        android:layout_marginTop="20dp"
+
+        android:textSize="50dp"
+        android:textColor="#ffffff"
+         />
 
 
 
-    <FrameLayout
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_alignParentTop="true"
-        android:layout_alignParentRight="true"
-        android:layout_alignParentEnd="true">
 
-        <Button
-            android:layout_width="231dp"
-            android:layout_height="172dp"
-            android:text="Power On"
-            android:id="@+id/button"
-            android:layout_gravity="center_horizontal|top"
-            android:onClick="sendPowerOncmd" />
+    <Button
+        android:layout_width="236dp"
+        android:layout_height="87dp"
+        android:text="@string/button_power_off"
+        android:id="@+id/button"
+        android:layout_gravity="center"
+        android:layout_marginTop="20dp"
+/>
 
-        <Button
-            android:layout_width="236dp"
-            android:layout_height="158dp"
-            android:text="Power OFF"
-            android:id="@+id/button2"
-            android:layout_gravity="center"
-            android:onClick="sendPowerOffcmd"/>
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="129dp"
-            android:textAppearance="?android:attr/textAppearanceLarge"
-            android:text=""
-            android:id="@+id/responsTextView"
-            android:layout_gravity="center_horizontal|bottom"
-            android:textSize="34dp"
-            android:textAlignment="center" />
-    </FrameLayout>
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:text="@string/cmd_in_progress"
+        android:id="@+id/CmdStatusTextView"
+        android:layout_gravity="center"
+        android:layout_marginTop="20dp"
+
+        android:textSize="10dp"
+        android:textColor="#ffffff"
+        />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:text="@string/sensor_1_place"
+        android:id="@+id/temperatureView"
+        android:layout_gravity="center"
+        android:layout_marginTop="50dp"
+
+        android:textSize="20dp"
+        android:textColor="#ffffff"
+        />
 </LinearLayout>

@@ -1,7 +1,20 @@
 <resources>
-    <string name="app_name">Heater_controller</string>
+    <string name="app_name">热水器控制及地下室温度示</string>
     <string name="action_settings">Settings</string>
     <string name="sensor_1_place">地下室温度</string>
+    <string name="button_power_on">开启热水器</string>
+    <string name="button_power_off">关闭热水器</string>
+    <string name="current_switch_status">当前热水器状态:</string>
+    <string name="power_on">开启</string>
+    <string name="power_off">关闭</string>
+    <string name="updating">检测中</string>
+    <string name="cmd_in_progress">发送命令中</string>
+    <string name="cmd_is_done">命令发送完毕</string>
     <string name="sensor_2_place">电路板温度</string>
-    <string name="updating_in_progress">温度更新中</string>
+    <string name="temp_updating_in_progress">温度更新中</string>
+    <string name="unknow_state">未知状态</string>
+    <string name="switch_status_updating_in_progress">热水器状态更新中</string>
+    <string name="sending_on_in_progress">开启命令发送中</string>
+    <string name="sending_off_in_progress">关闭命令发送中</string>
+    <string name="error">严重错误</string>
 </resources>
