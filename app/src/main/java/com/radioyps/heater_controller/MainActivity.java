@@ -55,9 +55,9 @@ public class MainActivity  extends AppCompatActivity implements AlarmReceiverObs
 
     private final static String SEVER_REPLY_SWITCH_ON="switch is on";
     private final static String SEVER_REPLY_SWITCH_OFF="switch is off";
+    private final static String NETWORK_ERROR = "network_error";
 
-
-
+    private Context mContext = this;
     private  static String currnet_cmd = null;
     private static int button_status = BUTTON_STATUS_UNKNOWN;
     @Override
@@ -235,7 +235,8 @@ public class MainActivity  extends AppCompatActivity implements AlarmReceiverObs
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-			response = "IOException: " + e.toString();
+			//response = "IOException: " + e.toString();
+            response = NETWORK_ERROR;
 		} finally {
 			if (socket != null) {
 				try {
@@ -358,6 +359,8 @@ private boolean checkCRC(String line){
             }else{
                 cmdStatus.setText("Error on cmd");
                 switchStatus.setText(getString(R.string.unknow_state));
+                power_button.setText(getString(R.string.disable_button_state));
+                button_status = BUTTON_STATUS_UNKNOWN;
             }
             /* set Button status*/
         }
@@ -374,6 +377,20 @@ private boolean checkCRC(String line){
 
             task_in_running = false;
             cmdStatus.setText(getString(R.string.cmd_is_done));
+            if(response.equalsIgnoreCase(NETWORK_ERROR)){
+                StringBuilder toastString = new StringBuilder();
+                String cmdType = null;
+                if(currnet_cmd.equalsIgnoreCase(AlarmReceiver.CmdGetTemperature)){
+                      cmdType = getResources().getString(R.string.query_temprature);
+                      toastString.append(cmdType);
+                }else if(currnet_cmd.equalsIgnoreCase(AlarmReceiver.CmdGetSwtichStatus)){
+                    cmdType = getResources().getString(R.string.query_switch);
+                    toastString.append(cmdType);
+                }
+                toastString.append(getResources().getString(R.string.network_error_try_again));
+                Toast.makeText(mContext,toastString.toString(), Toast.LENGTH_LONG).show();
+                return;
+            }
             if(currnet_cmd.equalsIgnoreCase(AlarmReceiver.CmdGetTemperature)){
                 updateResponseForTemp();
             }else if(currnet_cmd.equalsIgnoreCase(AlarmReceiver.CmdGetSwtichStatus)){
