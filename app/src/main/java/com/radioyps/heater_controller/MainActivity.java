@@ -21,6 +21,7 @@ import android.widget.Toast;
 
 import java.io.OutputStream;
 import java.net.UnknownHostException;
+import java.net.SocketTimeoutException;
 
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
@@ -56,6 +57,8 @@ public class MainActivity  extends AppCompatActivity implements AlarmReceiverObs
     private final static String SEVER_REPLY_SWITCH_ON="switch is on";
     private final static String SEVER_REPLY_SWITCH_OFF="switch is off";
     private final static String NETWORK_ERROR = "network_error";
+
+    private final static int SOCKET_TIMEOUT= 5000;
 
     private Context mContext = this;
     private  static String currnet_cmd = null;
@@ -198,12 +201,13 @@ public class MainActivity  extends AppCompatActivity implements AlarmReceiverObs
             }
 
             Log.i(LOG_TAG, "AsyncTask get param[0]: " + params[0]
-             + "param[1]" + params[1]);
+             + "param[1]: " + params[1]);
 		try {
 
 				response = "";
 
 			socket = new Socket(params[0], connectPort);
+            socket.setSoTimeout(SOCKET_TIMEOUT);
 
 			ByteArrayOutputStream byteArrayOutputStream =
 				new ByteArrayOutputStream(1024);
@@ -232,6 +236,11 @@ public class MainActivity  extends AppCompatActivity implements AlarmReceiverObs
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 			response = "UnknownHostException: " + e.toString();
+		} catch (SocketTimeoutException e) {
+
+            Log.i(LOG_TAG, "sendCmdOverTcpTask()>> exception on TIMEOUT error " );
+			e.printStackTrace();
+            response = NETWORK_ERROR;
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
