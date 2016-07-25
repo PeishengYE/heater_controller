@@ -82,6 +82,18 @@
         android:textColor="#ffffff"
         />
 
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:text="@string/sensor_1_place"
+        android:id="@+id/gcm_sending"
+        android:layout_gravity="center"
+        android:layout_marginTop="10dp"
+
+        android:textSize="20dp"
+        android:textColor="#ffffff"
+        />
     <ProgressBar
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"

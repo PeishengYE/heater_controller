@@ -20,7 +20,17 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.BufferedOutputStream;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.net.UnknownHostException;
 import java.net.SocketTimeoutException;
 
@@ -44,6 +54,7 @@ public class MainActivity  extends AppCompatActivity implements AlarmReceiverObs
     private  TextView cmdStatus;
     private TextView switchStatus;
     private TextView netErrView;
+    private TextView toGoogleView;
     private  Button power_button;
     private ProgressBar mProgressBar;
 	private String response="";
@@ -67,6 +78,7 @@ public class MainActivity  extends AppCompatActivity implements AlarmReceiverObs
     private Context mContext = this;
     private  static String currnet_cmd = null;
     private static int button_status = BUTTON_STATUS_UNKNOWN;
+    private  String GCM_message = "";
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -77,6 +89,7 @@ public class MainActivity  extends AppCompatActivity implements AlarmReceiverObs
         switchStatus = (TextView) findViewById(R.id.SwitchStatusTextView);
         power_button = (Button)findViewById(R.id.button);
         netErrView = (TextView)findViewById(R.id.networkErrView);
+        toGoogleView = (TextView)findViewById(R.id.gcm_sending);
         mProgressBar = (ProgressBar)findViewById(R.id.progressBar);
         alarm = new AlarmReceiver(this);
         power_button.setOnClickListener(new Button.OnClickListener(){
@@ -150,6 +163,12 @@ public class MainActivity  extends AppCompatActivity implements AlarmReceiverObs
         return true;
     }
 
+	private void sendGCM(String message){
+            GCMRequest gcmTask = new GCMRequest();
+            Toast.makeText(mContext,"GCM sending", Toast.LENGTH_LONG).show();
+            String [] cmd = new String[] {message, ""};
+            gcmTask.execute(cmd);
+	}
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         // Handle action bar item clicks here. The action bar will
@@ -159,6 +178,7 @@ public class MainActivity  extends AppCompatActivity implements AlarmReceiverObs
 
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
+	        sendGCM("testing from setting");
             return true;
         }
 
@@ -192,6 +212,77 @@ public class MainActivity  extends AppCompatActivity implements AlarmReceiverObs
         return task_in_running;
     }
 
+    private class GCMRequest extends AsyncTask<String, Void, String> {
+
+        @Override
+        protected String doInBackground(String... params) {
+
+            //final String API_KEY = "AIzaSyBfFzSi7nhsNkPC-N0H8s1ERIjQBu1soP8"; // An API key saved on the app server that gives the app server authorized access to Google services
+            final String API_KEY = "AIzaSyABZ_HnSS1VOcE8DCXhKGfE0Mn4HLyfCyE"; // An API key saved on the app server that gives the app server authorized access to Google services
+            final String CLIENT_REG_ID = "e_2eh3HclGQ:APA91bGm55kjkioHcKoY0NTq2xX1WL4mSkFuDtvOEz9QASsw23sYmfRSrRErJZuPGgCxX0z_m7wXne9f3YyRGQgREyr6U0nAD13vrBj5lkv8EXBEwcowih-dFO9KJzCJe7eLzqIfWwj0"; //An ID issued by the GCM connection servers to the client app that allows it to receive messages
+            final String postData = "{ \"registration_ids\": [ \"" + CLIENT_REG_ID + "\" ], " +
+                    "\"delay_while_idle\": true, " +
+                    "\"data\": {\"tickerText\":\"My Ticket\", " +
+                    "\"contentTitle\":\"My Title\", " +
+                    "\"message\": \"";
+            final String endData = "\"}}";
+            StringBuilder toSend = new StringBuilder();
+            toSend.append(postData);
+            toSend.append(params[0]);
+            toSend.append(endData);
+
+            try {
+                Log.i(LOG_TAG, "GCMRequest()>> sending <<" + toSend.toString() +">>");
+                URL url = new URL("https://gcm-http.googleapis.com/gcm/send");
+                HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
+                urlConnection.setDoInput(true);
+                urlConnection.setDoOutput(true);
+                urlConnection.setRequestMethod("POST");
+                urlConnection.setRequestProperty("Content-Type", "application/json");
+                urlConnection.setRequestProperty("Authorization", "key=" + API_KEY);
+
+                OutputStream outputStream = new BufferedOutputStream(urlConnection.getOutputStream());
+                BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(outputStream, "utf-8"));
+                writer.write(toSend.toString());
+                writer.flush();
+                writer.close();
+                outputStream.close();
+
+                int responseCode = urlConnection.getResponseCode();
+                InputStream inputStream;
+                if (responseCode < HttpURLConnection.HTTP_BAD_REQUEST) {
+                    inputStream = urlConnection.getInputStream();
+                } else {
+                    inputStream = urlConnection.getErrorStream();
+                }
+                BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
+                String temp, response = "";
+                while ((temp = bufferedReader.readLine()) != null) {
+                    response += temp;
+                }
+                Log.i(LOG_TAG, "GCMRequest()>> response: "+ response);
+                return response;
+            } catch (IOException e) {
+                e.printStackTrace();
+                return e.toString();
+            }
+
+        }
+
+        protected void onPostExecute(String message) {
+            super.onPostExecute(message);
+
+            if (toGoogleView != null) {
+                try {
+                    JSONObject jsonObject = new JSONObject(message);
+                    toGoogleView.setText(jsonObject.toString(5));
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                    toGoogleView.setText(e.toString());
+                }
+            }
+        }
+    }
 
 
     public class sendCmdOverTcpTask extends AsyncTask<String, Void, String[]> {
@@ -347,6 +438,11 @@ private boolean checkCRC(String line){
         if((temp[0] != null)){
             tempView.setText(getString(R.string.sensor_1_place));
             tempView.append(": " + temp[0]);
+            StringBuilder sb = new StringBuilder();
+            sb.append(getResources().getString(R.string.sensor_1_place));
+            sb.append(": " + temp[0]);
+            GCM_message = sb.toString();
+	        sendGCM(GCM_message);
             //tempView.append("\n");
             // tempView.append(R.string.sensor_2_place);
             // tempView.append(temp[1]);
