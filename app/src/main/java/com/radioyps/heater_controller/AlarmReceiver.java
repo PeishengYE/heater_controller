@@ -25,6 +25,7 @@ public class AlarmReceiver extends BroadcastReceiver {
         private final static String LOG_TAG = "AlarmReceiver";
 
     public static String TemperatureSensorAddress = "192.168.12.248";
+    //public static String TemperatureSensorAddress = "192.168.12.219";
     public static String HeaterControllerAddress = "192.168.12.202";
     //public static String HeaterControllerAddress = "192.168.12.248";
 
@@ -115,8 +116,12 @@ public class AlarmReceiver extends BroadcastReceiver {
                         Toast.makeText(context,
                                 context.getString(R.string.error), Toast.LENGTH_LONG).show();
                     }
-
-                    alarmReceiverObserver.sendCommand(cmd);
+                try {
+                    if (cmd != null)
+                        alarmReceiverObserver.sendCommand(cmd);
+                }catch(Exception e){
+                    e.printStackTrace();
+                }
 
 
             }else{

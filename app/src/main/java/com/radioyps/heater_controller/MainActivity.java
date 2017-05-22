@@ -30,6 +30,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
+import java.net.InetSocketAddress;
 import java.net.URL;
 import java.net.UnknownHostException;
 import java.net.SocketTimeoutException;
@@ -201,7 +202,11 @@ public class MainActivity  extends AppCompatActivity implements AlarmReceiverObs
             //setProgressBarVisibility(View.VISIBLE);
             mProgressBar.setVisibility(View.VISIBLE);
             sendCmdOverTcpTask sendTask = new sendCmdOverTcpTask();
+            try{
             sendTask.execute(cmd);
+            }catch (Exception e){
+                e.printStackTrace();
+            }
 
         }else{
             Log.i(LOG_TAG, "Network is OK, however task is running, ignore ");
@@ -219,7 +224,8 @@ public class MainActivity  extends AppCompatActivity implements AlarmReceiverObs
 
             //final String API_KEY = "AIzaSyBfFzSi7nhsNkPC-N0H8s1ERIjQBu1soP8"; // An API key saved on the app server that gives the app server authorized access to Google services
             final String API_KEY = "AIzaSyABZ_HnSS1VOcE8DCXhKGfE0Mn4HLyfCyE"; // An API key saved on the app server that gives the app server authorized access to Google services
-            final String CLIENT_REG_ID = "e_2eh3HclGQ:APA91bGm55kjkioHcKoY0NTq2xX1WL4mSkFuDtvOEz9QASsw23sYmfRSrRErJZuPGgCxX0z_m7wXne9f3YyRGQgREyr6U0nAD13vrBj5lkv8EXBEwcowih-dFO9KJzCJe7eLzqIfWwj0"; //An ID issued by the GCM connection servers to the client app that allows it to receive messages
+//            final String CLIENT_REG_ID = "e_2eh3HclGQ:APA91bGm55kjkioHcKoY0NTq2xX1WL4mSkFuDtvOEz9QASsw23sYmfRSrRErJZuPGgCxX0z_m7wXne9f3YyRGQgREyr6U0nAD13vrBj5lkv8EXBEwcowih-dFO9KJzCJe7eLzqIfWwj0"; //An ID issued by the GCM connection servers to the client app that allows it to receive messages
+            final String CLIENT_REG_ID = "dTfcTU6yk6s:APA91bFXnAc-Vy_DjXIe09WURsyN-bewR3mfkbzRyBxyk1MBHKViTmvs30o-PJcDt3d9E3bRbadqfCj0LTOWBCqCtJXYTvmMUEPVuOE1IWNKcywM9XAd4bK8HaBHrRz-0wZJRdOFOO6y";
             final String postData = "{ \"registration_ids\": [ \"" + CLIENT_REG_ID + "\" ], " +
                     "\"delay_while_idle\": true, " +
                     "\"data\": {\"tickerText\":\"My Ticket\", " +
@@ -289,6 +295,7 @@ public class MainActivity  extends AppCompatActivity implements AlarmReceiverObs
 
         private final String LOG_TAG = sendCmdOverTcpTask.class.getSimpleName();
 
+        private boolean isReceivedSth = false;
 
         @Override
         protected String[] doInBackground(String... params) {
@@ -304,12 +311,14 @@ public class MainActivity  extends AppCompatActivity implements AlarmReceiverObs
 		try {
 
 				response = "";
+            socket = new Socket();
 
-			socket = new Socket(params[0], connectPort);
+            Log.i(LOG_TAG, "AsyncTask ()>> before connecting");
+            socket.connect(new InetSocketAddress(params[0], connectPort), 2000);
             socket.setSoTimeout(SOCKET_TIMEOUT);
-
-			ByteArrayOutputStream byteArrayOutputStream =
-				new ByteArrayOutputStream(1024);
+            Log.i(LOG_TAG, "AsyncTask ()>> after connecting");
+         ByteArrayOutputStream byteArrayOutputStream =
+                 new ByteArrayOutputStream(1024);
 
 			byte[] buffer = new byte[1024];
 
@@ -317,17 +326,22 @@ public class MainActivity  extends AppCompatActivity implements AlarmReceiverObs
 			InputStream inputStream = socket.getInputStream();
             OutputStream outputStream = socket.getOutputStream();
 
-
+            Log.i(LOG_TAG, "AsyncTask ()>> before writing");
             outputStream.write(params[1].getBytes());
             outputStream.flush();
+            Log.i(LOG_TAG, "AsyncTask ()>> begin reading ..");
 
-			/*
+			/*a
 			 * notice: inputStream.read() will block if no data return
 			 */
 			while ((bytesRead = inputStream.read(buffer)) != -1) {
+                Log.i(LOG_TAG, "AsyncTask ()>> read one");
 				byteArrayOutputStream.write(buffer, 0, bytesRead);
 				response += byteArrayOutputStream.toString("UTF-8");
+                Log.i(LOG_TAG, "AsyncTask ()>> read with" + response);
+                isReceivedSth = true;
 			}
+            Log.i(LOG_TAG, "AsyncTask ()>> after reading");
             outputStream.close();
             inputStream.close();
 
@@ -344,10 +358,13 @@ public class MainActivity  extends AppCompatActivity implements AlarmReceiverObs
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 			//response = "IOException: " + e.toString();
-            response = NETWORK_ERROR;
+            if(!isReceivedSth )
+                 response = NETWORK_ERROR;
 		} finally {
+            Log.i(LOG_TAG, "AsyncTask ()>> trying closing socket");
 			if (socket != null) {
 				try {
+                    Log.i(LOG_TAG, "AsyncTask ()>> do close socket");
 					socket.close();
 				} catch (IOException e) {
 					// TODO Auto-generated catch block
@@ -386,7 +403,8 @@ private boolean checkCRC(String line){
 
 		String lines[] = response.split("\\r?\\n");
 
-        if(lines.length != 4){
+        //if(lines.length != 4){
+        if(lines.length != 2){
             Log.i(LOG_TAG, "The received line have error, ignore !");
             Log.i(LOG_TAG, "lines:" + response);
             return null;
@@ -394,8 +412,8 @@ private boolean checkCRC(String line){
 
         Log.i(LOG_TAG, "line 0: " + lines[0]);
         Log.i(LOG_TAG, "line 1: " + lines[1]);
-        Log.i(LOG_TAG, "line 3: " + lines[2]);
-        Log.i(LOG_TAG, "line 4: " + lines[3]);
+        //Log.i(LOG_TAG, "line 3: " + lines[2]);
+        //Log.i(LOG_TAG, "line 4: " + lines[3]);
 
         if(checkCRC(lines[0])){
         s_temp_1 = lines[1].split("=")[1];
@@ -408,12 +426,14 @@ private boolean checkCRC(String line){
          }
 
 
+		/*
         if(checkCRC(lines[2])){
         s_temp_2 = lines[3].split("=")[1];
         temp_2 = Double.parseDouble(s_temp_2);
         temp_2 /= 1000;
             result[1] = Double.toString(temp_2);
-        }
+        }*/
+            result[1] = result[0];
 
 
         Log.i(LOG_TAG, " temp 1 = " + result[0]);
@@ -442,7 +462,7 @@ private boolean checkCRC(String line){
             sb.append(getResources().getString(R.string.sensor_1_place));
             sb.append(": " + temp[0]);
             GCM_message = sb.toString();
-	        sendGCM(GCM_message);
+	        //sendGCM(GCM_message);
             //tempView.append("\n");
             // tempView.append(R.string.sensor_2_place);
             // tempView.append(temp[1]);
