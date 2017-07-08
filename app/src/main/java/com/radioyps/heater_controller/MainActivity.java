@@ -61,8 +61,8 @@ public class MainActivity  extends AppCompatActivity implements AlarmReceiverObs
 	private String response="";
     private static boolean task_in_running = false;
     private AlarmReceiver alarm = null;
-    private static long TIME_INTERVAL = 15*1000;
-    private static long TIME_DELAY = 3*1000;
+    private static long TIME_INTERVAL = 4*1000;
+    private static long TIME_DELAY = 1*1000;
 
     private final static int BUTTON_STATUS_UNKNOWN = 0x14;
     private final static int BUTTON_STATUS_ON = 0x15;
@@ -403,8 +403,8 @@ private boolean checkCRC(String line){
 
 		String lines[] = response.split("\\r?\\n");
 
-        //if(lines.length != 4){
-        if(lines.length != 2){
+        if(lines.length != 4){
+        //if(lines.length != 2){
             Log.i(LOG_TAG, "The received line have error, ignore !");
             Log.i(LOG_TAG, "lines:" + response);
             return null;
@@ -412,8 +412,8 @@ private boolean checkCRC(String line){
 
         Log.i(LOG_TAG, "line 0: " + lines[0]);
         Log.i(LOG_TAG, "line 1: " + lines[1]);
-        //Log.i(LOG_TAG, "line 3: " + lines[2]);
-        //Log.i(LOG_TAG, "line 4: " + lines[3]);
+        Log.i(LOG_TAG, "line 3: " + lines[2]);
+        Log.i(LOG_TAG, "line 4: " + lines[3]);
 
         if(checkCRC(lines[0])){
         s_temp_1 = lines[1].split("=")[1];

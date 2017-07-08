@@ -1,7 +1,7 @@
 <resources>
     <string name="app_name">热水器控制及地下室温度示</string>
     <string name="action_settings">Settings</string>
-    <string name="sensor_1_place">地下室温度</string>
+    <string name="sensor_1_place">热水器温度</string>
     <string name="button_power_on">开启热水器</string>
     <string name="button_power_off">关闭热水器</string>
     <string name="current_switch_status">当前热水器状态:</string>
