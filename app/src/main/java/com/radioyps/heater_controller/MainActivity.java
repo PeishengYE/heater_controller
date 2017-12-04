@@ -80,6 +80,8 @@ public class MainActivity  extends AppCompatActivity implements AlarmReceiverObs
     private  static String currnet_cmd = null;
     private static int button_status = BUTTON_STATUS_UNKNOWN;
     private  String GCM_message = "";
+    private static String STR_SENSOR = "Water Tank Temp: ";
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -390,62 +392,21 @@ private boolean checkCRC(String line){
 
 
 
-        private String [] parseTemperature()
-	{
+        private String  parseTemperature(){
 
-
-
-
-        double temp_1=-1, temp_2=-1;
-        String s_temp_1 ="", s_temp_2 ="";
-        String[] result = new String[2];
-
-
-		String lines[] = response.split("\\r?\\n");
-
-        if(lines.length != 4){
-        //if(lines.length != 2){
-            Log.i(LOG_TAG, "The received line have error, ignore !");
-            Log.i(LOG_TAG, "lines:" + response);
-            return null;
+            Log.i(LOG_TAG, "parseTemperature()>> temp: " + response);
+        String result = "";
+        if(response.startsWith(STR_SENSOR)){
+            Log.i(LOG_TAG, "parseTemperature()>> temp start: " + response.substring(17,22));
+            result = response.substring(17,22);
         }
-
-        Log.i(LOG_TAG, "line 0: " + lines[0]);
-        Log.i(LOG_TAG, "line 1: " + lines[1]);
-        Log.i(LOG_TAG, "line 3: " + lines[2]);
-        Log.i(LOG_TAG, "line 4: " + lines[3]);
-
-        if(checkCRC(lines[0])){
-        s_temp_1 = lines[1].split("=")[1];
-        temp_1 = Double.parseDouble(s_temp_1);
-        temp_1 /= 1000;
-
-            result[0]= Double.toString(temp_1);
-
-
-         }
-
-
-		/*
-        if(checkCRC(lines[2])){
-        s_temp_2 = lines[3].split("=")[1];
-        temp_2 = Double.parseDouble(s_temp_2);
-        temp_2 /= 1000;
-            result[1] = Double.toString(temp_2);
-        }*/
-            result[1] = result[0];
-
-
-        Log.i(LOG_TAG, " temp 1 = " + result[0]);
-        Log.i(LOG_TAG, " temp 2 = " + result[1]);
-
 
 		return result;
 	}
 
         private void updateResponseForTemp(){
 
-        String[] temp = parseTemperature();
+        String temp = parseTemperature();
         if(temp == null){
             task_in_running = false;
             return;
@@ -454,22 +415,20 @@ private boolean checkCRC(String line){
 
         //tempView.setText(parseTemperature());
 
-        //if((temp[0] != null)&&(temp[1] != null)){
-        if((temp[0] != null)){
             tempView.setText(getString(R.string.sensor_1_place));
-            tempView.append(": " + temp[0]);
+            tempView.append(": " + temp);
             StringBuilder sb = new StringBuilder();
             sb.append(getResources().getString(R.string.sensor_1_place));
-            sb.append(": " + temp[0]);
+            sb.append(": " + temp);
             GCM_message = sb.toString();
 	        //sendGCM(GCM_message);
             //tempView.append("\n");
             // tempView.append(R.string.sensor_2_place);
             // tempView.append(temp[1]);
 
-            Log.i(LOG_TAG, "onPostExecute temp 1 = " + temp[0]);
-            Log.i(LOG_TAG, "onPostExecute temp 2 = " + temp[1]);
-        }
+            Log.i(LOG_TAG, "onPostExecute temperature :" + temp);
+
+
 
 
         }
